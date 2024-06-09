@@ -1,60 +1,54 @@
 // create a web server
+// create a web server
 var http = require('http');
-var url = require('url');
 var fs = require('fs');
+var url = require('url');
 var path = require('path');
-var port = 3000;
-
-var server = http.createServer(function(request, response) {
-    var url = request.url;
-    var filePath = '.' + url;
-
-    if (filePath == './') {
-        filePath = './index.html';
-    }
-
-    var extname = path.extname(filePath);
-    var contentType = 'text/html';
-
-    switch (extname) {
-        case '.js':
-            contentType = 'text/javascript';
-            break;
-        case '.css':
-            contentType = 'text/css';
-            break;
-        case '.json':
-            contentType = 'application/json';
-            break;
-        case '.png':
-            contentType = 'image/png';
-            break;
-        case '.jpg':
-            contentType = 'image/jpg';
-            break;
-        case '.wav':
-            contentType = 'audio/wav';
-            break;
-    }
-
-    fs.readFile(filePath, function(error, content) {
-        if (error) {
-            if (error.code == 'ENOENT') {
-                fs.readFile('./404.html', function(error, content) {
-                    response.writeHead(200, { 'Content-Type': contentType });
-                    response.end(content, 'utf-8');
-                });
+var comments = [];
+var server = http.createServer(function(req, res) {
+    var parsedUrl = url.parse(req.url, true);
+    var pathName = parsedUrl.pathname;
+    if (pathName === '/') {
+        fs.readFile('./index.html', function(err, data) {
+            if (err) {
+                res.end('404 not found');
             } else {
-                response.writeHead(500);
-                response.end('Sorry, check with the site admin for error: ' + error.code + ' ..\n');
-                response.end();
+                res.end(data);
             }
-        } else {
-            response.writeHead(200, { 'Content-Type': contentType });
-            response.end(content, 'utf-8');
-        }
-    });
+        });
+    } else if (pathName === '/post') {
+        fs.readFile('./post.html', function(err, data) {
+            if (err) {
+                res.end('404 not found');
+            } else {
+                res.end(data);
+            }
+        });
+    } else if (pathName.indexOf('/public/') === 0) {
+        fs.readFile('.' + pathName, function(err, data) {
+            if (err) {
+                res.end('404 not found');
+            } else {
+                res.end(data);
+            }
+        });
+    } else if (pathName === '/comments') {
+        var json = JSON.stringify(comments);
+        res.end(json);
+    } else if (pathName === '/comment') {
+        var comment = parsedUrl.query;
+        comments.push(comment);
+        res.end('success');
+    } else {
+        fs.readFile('.' + pathName, function(err, data) {
+            if (err) {
+                res.end('404 not found');
+            } else {
+                res.end(data);
+            }
+        });
+    }
 });
-
-server.listen(port);
-console.log('Server running at http://');
+server.listen(3000, function() {
+    console.log('server is listening at port 3000');
+});
